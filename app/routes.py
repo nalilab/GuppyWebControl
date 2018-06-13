@@ -17,13 +17,12 @@ from datetime import datetime
 arduinos = [];
 ard_str = '';
 
-class SerialSocketProtocol(object):
+class GuppySocketProtocol(object):
     '''
     A class which combines the serial connection and the socket into a single
     class, such that we can handle these things more properly.
     '''
 
-    serial = None
     switch = False
     unit_of_work = 0
     name = '';
@@ -34,14 +33,12 @@ class SerialSocketProtocol(object):
         """
         assign socketio object to emit
         """
-        self.serial = serial.Serial()
         self.socketio = socketio
 
     def __init__(self, socketio, name):
         """
         assign socketio object to emit
         """
-        self.serial = serial.Serial()
         self.socketio = socketio
         self.name = name;
 
@@ -82,27 +79,22 @@ class SerialSocketProtocol(object):
         """
         do work and emit message
         """
+
+        previous_img_files = set()
         while self.switch:
-
-            # must call emit from the socketio
-            # must specify the namespace
-
-            if self.is_open():
-                if self.serial.in_waiting:
-                    self.unit_of_work += 1
-                    try:
-                        timestamp, ard_str = self.pull_data()
-                        vals = ard_str.split(',');
-                        self.socketio.emit('my_response',
-                            {'data': ard_str, 'count': self.unit_of_work})
-                    except Exception as e:
-                        print('{}'.format(e))
-                        self.socketio.emit('my_response',
-                            {'data': '{}'.format(e), 'count': self.unit_of_work})
-                        self.switch = False
+            shot_folder = time.strftime(app.config['IMG_FOLDER']) # Use new date each loop so code can run overnight
+            if os.path.isdir(shot_folder):
+                img_files = set(os.path.join(shot_folder, f) for f in os.listdir(shot_folder) if f.endswith('.bmp'))
+                new_img_files = img_files.difference(previous_img_files)
+                for img_file in new_img_files:
+                    print('Obtained a new file')
+                    previous_img_files = img_files
+                    self.socketio.emit('my_response',
+                        {'data': 'We have a new img', 'count': self.unit_of_work})
             else:
+                error_str = "Img folder doesn't exist (yet?)";
+                print(error_str)
                 self.switch = False
-                # TODO: Make this a link
                 error_str = 'Port closed. please configure one properly under config.'
                 self.socketio.emit('log_response',
                 {'data': error_str, 'count': self.unit_of_work})
@@ -111,22 +103,9 @@ class SerialSocketProtocol(object):
 
     def pull_data(self):
         '''
-        Pulling the actual data from the arduino.
+        Pulling the actual data from the guppy folder.
         '''
-        stream = self.serial.read(self.serial.in_waiting);
-        self.ard_str = stream.decode(encoding='windows-1252');
-        timestamp = datetime.now().replace(microsecond=0).isoformat();
         return timestamp, self.ard_str
-
-    def trig_measurement(self):
-        '''
-        Triggering a measurement on the Arduino.
-        TODO: Would be good to get a confirmation that it is done.
-        '''
-        # only read out on ask
-        o_str = 'w'
-        b = o_str.encode()
-        self.serial.write(b);
 
 @app.context_processor
 def git_url():
