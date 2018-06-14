@@ -2,6 +2,7 @@ from app import app, socketio
 from app.forms import UpdateForm, DisconnectForm, ConnectForm, ReConnectForm
 import h5py
 import git
+import os
 import numpy as np
 from flask import render_template, flash, redirect, url_for, session
 
@@ -35,14 +36,22 @@ class GuppySocketProtocol(object):
         assign socketio object to emit
         add the folder to watch
         """
-        self.folder = folder
+        if os.path.isdir(folder):
+            self.folder = folder;
+        else:
+            print('Folder does not exist yet.')
+            # TODO: Send back an error.
         self.socketio = socketio
 
     def __init__(self, socketio, folder, name):
         """
         as above, but also assign a name.
         """
-        self.folder = folder;
+        if os.path.isdir(folder):
+            self.folder = folder;
+        else:
+            print('Folder does not exist yet.')
+            # TODO: Send back an error.
         self.socketio = socketio;
         self.name = name;
 
@@ -64,12 +73,10 @@ class GuppySocketProtocol(object):
         """
         start to listen to the serial port of the Arduino
         """
+        print('Starting the listener.')
         if not self.switch:
-            if not self.is_open():
-                print('the serial port should be open right now')
-            else:
-                self.switch = True
-                thread = self.socketio.start_background_task(target=self.do_work)
+            self.switch = True
+            thread = self.socketio.start_background_task(target=self.do_work)
         else:
             print('Already running')
 
@@ -80,22 +87,13 @@ class GuppySocketProtocol(object):
 
         previous_img_files = set()
         while self.switch:
-            shot_folder = time.strftime(app.config['IMG_FOLDER']) # Use new date each loop so code can run overnight
-            if os.path.isdir(shot_folder):
-                img_files = set(os.path.join(shot_folder, f) for f in os.listdir(shot_folder) if f.endswith('.bmp'))
-                new_img_files = img_files.difference(previous_img_files)
-                for img_file in new_img_files:
-                    print('Obtained a new file')
-                    previous_img_files = img_files
-                    self.socketio.emit('my_response',
-                        {'data': 'We have a new img', 'count': self.unit_of_work})
-            else:
-                error_str = "Img folder doesn't exist (yet?)";
-                print(error_str)
-                self.switch = False
-                error_str = 'Port closed. please configure one properly under config.'
-                self.socketio.emit('log_response',
-                {'data': error_str, 'count': self.unit_of_work})
+            img_files = set(os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.BMP'))
+            new_img_files = img_files.difference(previous_img_files)
+            for img_file in new_img_files:
+                print('Obtained a new file')
+                previous_img_files = img_files
+                self.socketio.emit('my_response',
+                    {'data': 'We have a new img', 'count': self.unit_of_work})
 
             eventlet.sleep(0.1)
 
