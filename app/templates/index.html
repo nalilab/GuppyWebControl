@@ -6,7 +6,7 @@
   <tr>
     <th scope="col">#</th>
     <th scope="col">Name</th>
-    <th scope="col">Port</th>
+    <th scope="col">Folder</th>
     <th scope="col">Status</th>
     <th scope="col">Other actions </th>
   </tr>
@@ -16,7 +16,7 @@
     <tr>
       <td>{{ ard.id }}</td>
       <td>{{ ard.name }}</td>
-      <td>{{ ard.port }}</td>
+      <td>{{ ard.folder }}</td>
       {% if ard.active %}
       <td class="bg-success">Open</td>
       {% else %}
@@ -29,7 +29,7 @@
  </tbody>
 </table>
 {% if not props %}
-<a class="btn btn-default" id="add_arduino" href="{{url_for('add_arduino')}}"> Add the Arduino.</a>
+<a class="btn btn-default" id="add_camera" href="{{url_for('add_camera')}}"> Add a Camera.</a>
 {% endif %}
 <button class="btn btn-default" id="trig_button"> Trigger the measurement.</button>
 <h2>General stuff:</h2>

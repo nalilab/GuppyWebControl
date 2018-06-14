@@ -1,5 +1,5 @@
 from app import app, socketio
-from app.forms import UpdateForm, DisconnectForm, ConnectForm, SerialWaitForm, ReConnectForm
+from app.forms import UpdateForm, DisconnectForm, ConnectForm, ReConnectForm
 import h5py
 import git
 import numpy as np
@@ -28,25 +28,29 @@ class GuppySocketProtocol(object):
     name = '';
     id = 0;
     ard_str = '';
+    folder = '.';
 
-    def __init__(self, socketio):
+    def __init__(self, socketio, folder):
         """
         assign socketio object to emit
+        add the folder to watch
         """
+        self.folder = folder
         self.socketio = socketio
 
-    def __init__(self, socketio, name):
+    def __init__(self, socketio, folder, name):
         """
-        assign socketio object to emit
+        as above, but also assign a name.
         """
-        self.socketio = socketio
+        self.folder = folder;
+        self.socketio = socketio;
         self.name = name;
 
     def is_open(self):
         '''
-        test if the serial connection is open
+        test if the worker is running
         '''
-        return self.serial.is_open
+        return self.switch
 
     def stop(self):
         """
@@ -55,12 +59,6 @@ class GuppySocketProtocol(object):
         self.unit_of_work = 0
         if self.is_open():
             self.serial.close()
-
-    def open_serial(self, port, baud_rate, timeout = 1):
-        """
-        open the serial port
-        """
-        self.serial = serial.Serial(port, baud_rate, timeout = 1)
 
     def start(self):
         """
@@ -131,7 +129,7 @@ def index():
     for ii, arduino in enumerate(arduinos):
         # create also the name for the readout field of the temperature
         temp_field_str = 'read' + str(arduino.id);
-        dict = {'name': arduino.name, 'id': arduino.id, 'port': arduino.serial.port,
+        dict = {'name': arduino.name, 'id': arduino.id, 'folder': arduino.folder,
         'active': arduino.is_open(), 'label': temp_field_str};
         props.append(dict)
 
@@ -166,37 +164,30 @@ def details(ard_nr):
     return render_template('details.html',n_ards = n_ards, props = props, ard_nr = ard_nr,
         name = name, conn_open = conn_open);
 
-@app.route('/add_arduino', methods=['GET', 'POST'])
-def add_arduino():
+@app.route('/add_camera', methods=['GET', 'POST'])
+def add_camera():
     '''
-    Add an arduino to the set up
+    Add a camera to the set up
     '''
     global arduinos;
     cform = ConnectForm();
 
     if cform.validate_on_submit():
-        n_port =  cform.serial_port.data;
+        n_folder =  cform.folder.data;
         name = cform.name.data;
-        ssProto = SerialSocketProtocol(socketio, name);
-        ssProto.id = len(arduinos)
+        camera = GuppySocketProtocol(socketio, n_folder, name);
+        camera.id = len(arduinos)
         try:
-            ssProto.open_serial(n_port, 115200, timeout = 1);
-            ssProto.start();
-            if ssProto.is_open():
-                app.config['SERIAL_PORT'] = n_port;
-                arduinos.append(ssProto)
-                flash('We added a new arduino {}'.format(app.config['SERIAL_PORT']))
-                return redirect(url_for('index'))
-            else:
-                 flash('Adding the Arduino went wrong', 'error')
-                 return redirect(url_for('add_arduino'))
+            camera.start();
+            arduinos.append(camera)
+            return redirect(url_for('index'))
         except Exception as e:
              flash('{}'.format(e), 'error')
-             return redirect(url_for('add_arduino'))
+             return redirect(url_for('add_camera'))
 
-    port = app.config['SERIAL_PORT']
+    folder = app.config['CAMERA_FOLDER']
     n_ards = len(arduinos)
-    return render_template('add_arduino.html', port = port, cform = cform, n_ards=n_ards);
+    return render_template('add_camera.html', folder = folder, cform = cform, n_ards=n_ards);
 
 @app.route('/change_arduino/<ard_nr>')
 def change_arduino(ard_nr):
@@ -206,7 +197,7 @@ def change_arduino(ard_nr):
     global arduinos;
     if not arduinos:
         flash('No arduinos installed', 'error')
-        return redirect(url_for('add_arduino'))
+        return redirect(url_for('add_camera'))
 
     n_ards = len(arduinos);
     arduino = arduinos[int(ard_nr)];
@@ -230,7 +221,7 @@ def update():
     global arduinos
     if not arduinos:
         flash('No arduino yet.', 'error')
-        return redirect(url_for('add_arduino'))
+        return redirect(url_for('add_camera'))
 
     sform = UpdateSetpointForm();
     uform = UpdateForm();

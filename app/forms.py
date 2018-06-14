@@ -10,13 +10,6 @@ class UpdateForm(FlaskForm):
     serial_port = StringField('Update to port:', validators=[DataRequired()])
     submit = SubmitField('Update port')
 
-class SerialWaitForm(FlaskForm):
-    '''
-    The form for connecting to the Arduino
-    '''
-    serial_time = StringField('Time between measurements:', validators=[DataRequired()])
-    submit = SubmitField('Update waiting time.')
-
 class DisconnectForm(FlaskForm):
     '''
     The form for disconnecting from the Arduino
@@ -26,11 +19,11 @@ class DisconnectForm(FlaskForm):
 
 class ConnectForm(FlaskForm):
     '''
-    The form for connecting to the Arduino
+    The form for connecting to the camera
     '''
     id = HiddenField('A hidden field');
-    serial_port = StringField('Connect on port:', validators=[DataRequired()], description = 'Serial port')
-    name = StringField('Name of the Arduino:', description = 'Name', default = 'Arduino')
+    folder = StringField('Folder name:', validators=[DataRequired()], description = 'Folder to watch')
+    name = StringField('Name of the Camera:', description = 'Name', default = 'Oven')
     submit = SubmitField('Connect')
 
 class ReConnectForm(FlaskForm):
