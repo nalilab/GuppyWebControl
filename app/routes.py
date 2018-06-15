@@ -4,8 +4,10 @@ import h5py
 import git
 import os
 import numpy as np
-from flask import render_template, flash, redirect, url_for, session
 
+import imageio
+
+from flask import render_template, flash, redirect, url_for, session
 import time
 
 from flask_socketio import emit, disconnect
@@ -96,6 +98,22 @@ class GuppySocketProtocol(object):
                     {'data': 'We have a new img', 'count': self.unit_of_work})
 
             eventlet.sleep(0.1)
+
+    def trig_measurement(self):
+        '''
+        Creating a test pattern in the save_folder.
+        '''
+        # only read out on ask
+        Nx = 100;
+        Ny = 400;
+        sigma = 20;
+        xlin = np.linspace(Nx, Nx) - Nx/2;
+        ylin = np.linspace(Nx, Ny) - Ny/2;
+        [X, Y] = np.meshgrid(xlin,ylin);
+        z = np.exp(-(X**2 +Y**2)/sigma**2);
+        name = self.folder + '/test17.BMP';
+        print(name)
+        imageio.imwrite(name, z);
 
     def pull_data(self):
         '''
@@ -327,13 +345,13 @@ def run_disconnect():
 def ping_pong():
     emit('my_pong')
 
-@socketio.on('trig_mag')
+@socketio.on('trig_img')
 def trig_mag():
     global arduinos;
     if arduinos:
         arduino = arduinos[0];
         arduino.trig_measurement();
-        ard_str = 'Triggered a measurement.';
+        ard_str = 'Triggered a test img.';
     else:
         ard_str = 'Nothing to connect to';
 

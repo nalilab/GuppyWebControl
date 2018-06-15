@@ -31,7 +31,7 @@
 {% if not props %}
 <a class="btn btn-default" id="add_camera" href="{{url_for('add_camera')}}"> Add a Camera.</a>
 {% endif %}
-<button class="btn btn-default" id="trig_button"> Trigger the measurement.</button>
+<button class="btn btn-default" id="trig_button"> Create test img.</button>
 <h2>General stuff:</h2>
 <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
 <div id="log"></div>
@@ -60,7 +60,7 @@ $(document).ready(function() {
   });
 
   $("#trig_button" ).click(function() {
-    socket.emit('trig_mag');
+    socket.emit('trig_img');
   });
 
   // Interval function that tests message latency by sending a "ping"
