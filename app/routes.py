@@ -1,5 +1,5 @@
 from app import app, socketio
-from app.forms import UpdateForm, DisconnectForm, ConnectForm, ReConnectForm
+from app.forms import UpdateForm, ConnectForm
 import h5py
 import git
 import os
@@ -168,7 +168,7 @@ def details(ard_nr):
     '''
     global arduinos;
     if not arduinos:
-        flash('No arduinos installed', 'error')
+        flash('No cameras installed', 'error')
         return redirect(url_for('index'))
 
     n_ards = len(arduinos);
@@ -179,12 +179,12 @@ def details(ard_nr):
     for ii, arduino in enumerate(arduinos):
         # create also the name for the readout field of the temperature
         temp_field_str = 'read' + str(arduino.id);
-        dict = {'name': arduino.name, 'id': arduino.id, 'port': arduino.serial.port,
+        dict = {'name': arduino.name, 'id': arduino.id, 'folder': arduino.folder,
         'active': arduino.is_open(), 'label': temp_field_str};
         props.append(dict)
 
     name = arduino.name;
-    port = arduino.serial.port;
+    folder = arduino.folder;
     conn_open = arduino.is_open()
     return render_template('details.html',n_ards = n_ards, props = props, ard_nr = ard_nr,
         name = name, conn_open = conn_open);
@@ -221,68 +221,49 @@ def change_arduino(ard_nr):
     '''
     global arduinos;
     if not arduinos:
-        flash('No arduinos installed', 'error')
+        flash('No cameras installed', 'error')
         return redirect(url_for('add_camera'))
 
     n_ards = len(arduinos);
     arduino = arduinos[int(ard_nr)];
-    props = {'name': arduino.name, 'id': int(ard_nr), 'port': arduino.serial.port,
+    props = {'name': arduino.name, 'id': int(ard_nr), 'folder': arduino.folder,
             'active': arduino.is_open()};
 
     uform = UpdateForm(id=ard_nr)
 
-    wform = SerialWaitForm(id=ard_nr)
-    dform = DisconnectForm(id=ard_nr)
-    cform = ReConnectForm(id=ard_nr)
-
     return render_template('change_arduino.html',
-        form=uform, dform = dform, cform = cform, wform = wform, props=props);
+        form=uform, props=props);
 
 @app.route('/update', methods=['POST'])
 def update():
     '''
-    Update the serial port.
+    Update the watched folder.
     '''
     global arduinos
     if not arduinos:
-        flash('No arduino yet.', 'error')
+        flash('No camera yet.', 'error')
         return redirect(url_for('add_camera'))
 
-    sform = UpdateSetpointForm();
     uform = UpdateForm();
-    wform = SerialWaitForm()
-    dform = DisconnectForm()
-    cform = ReConnectForm()
-    gform = UpdateGainForm()
-    iform = UpdateIntegralForm()
-    diff_form = UpdateDifferentialForm()
 
     id = int(uform.id.data);
-    arduino = arduinos[id];
+    camera = arduinos[id];
 
     if uform.validate_on_submit():
 
-        arduino = arduinos[int(id)];
-        n_port =  uform.serial_port.data;
-        try:
-            if arduino.is_open():
-                arduino.stop()
-            arduino.open_serial(n_port, 115200, timeout = 1)
-            if arduino.is_open():
-                flash('We updated the serial to {}'.format(n_port))
-            else:
-                flash('Update of the serial port went wrong.', 'error')
-        except Exception as e:
-             flash('{}'.format(e), 'error')
+        camera = arduinos[int(id)];
+        n_folder =  uform.folder.data;
+        if os.path.isdir(n_folder):
+            camera.folder = n_folder;
+            flash('Updated the folder to {}'.format(n_folder))
+        else:
+            flash('Folder does not exist', 'error');
         return redirect(url_for('change_arduino', ard_nr = id))
     else:
-        props = {'name': arduino.name, 'id': int(ard_nr), 'port': arduino.serial.port,
-            'active': arduino.is_open(), 'setpoint': arduino.setpoint,
-            'gain': arduino.gain, 'tauI': arduino.integral, 'tauD': arduino.diff};
+        props = {'name': camera.name, 'id': int(ard_nr), 'folder': camera.folder,
+            'active': camera.is_open()};
 
-        return render_template('change_arduino.html', form=uform, dform = dform,
-            cform = cform,  sform = sform, gform = gform, iform = iform,
-            diff_form = diff_form, wform = wform, props=props);
+        return render_template('change_arduino.html', form=uform, props=props);
 
 @app.route('/file/<filestring>')
 def file(filestring):
