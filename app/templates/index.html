@@ -34,7 +34,10 @@
 <button class="btn btn-default" id="trig_button"> Create test img.</button>
 <h2>General stuff:</h2>
 <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
+<div id="plot"><!-- Plotly chart will be drawn inside this DIV --></div>
+
 <div id="log"></div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -74,6 +77,14 @@ $(document).ready(function() {
     var this_id =  '{{ ard_nr}}';
     console.log(id);
     console.log(this_id);
+
+    var updated_plot = {
+      z: data,
+      name: 'Setpoint',
+      type: 'heatmap'
+    };
+
+    Plotly.update('plot', updated_plot)
   });
 
   // Interval function that tests message latency by sending a "ping"
@@ -93,6 +104,19 @@ $(document).ready(function() {
     sum += ping_pong_times[i];
     $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
   });
+
+  // set up the plotting
+var setpoint_trace = {
+  z: [[1, 20, 30], [20, 1, 60], [30, 60, 1]],
+  name: 'Setpoint',
+  type: 'heatmap'
+};
+
+
+var data = [ setpoint_trace];
+var layout = {};
+
+  Plotly.newPlot('plot', data, layout);
 });
 </script>
 {% endblock %}
