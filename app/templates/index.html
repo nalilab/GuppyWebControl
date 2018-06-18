@@ -71,20 +71,27 @@ $(document).ready(function() {
     var data = msg.data;
     $('#log').prepend('<br>' + $('<div/>').text('Received #' + msg.count + ': ' + msg.data).html());
 
-    console.log(data)
+    data_arr = [];
+    for (var i=0; i<data.length; i++){
+      data_arr.push(data[i]);
+    }
+
+    console.log(data_arr);
+
+    var updated_plot = {
+      z: data_arr,
+      type: 'heatmap'
+    };
+
+    var layout = {};
+    Plotly.newPlot('plot', [updated_plot], layout);
+
     var time = msg.time;
     var id = msg.id;
     var this_id =  '{{ ard_nr}}';
     console.log(id);
     console.log(this_id);
 
-    var updated_plot = {
-      z: data,
-      name: 'Setpoint',
-      type: 'heatmap'
-    };
-
-    Plotly.update('plot', updated_plot)
   });
 
   // Interval function that tests message latency by sending a "ping"
@@ -107,7 +114,7 @@ $(document).ready(function() {
 
   // set up the plotting
 var setpoint_trace = {
-  z: [[1, 20, 30], [20, 1, 60], [30, 60, 1]],
+  z: [],
   name: 'Setpoint',
   type: 'heatmap'
 };

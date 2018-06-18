@@ -110,17 +110,19 @@ class GuppySocketProtocol(object):
         Creating a test pattern in the save_folder.
         '''
         # only read out on ask
-        Nx = 100;
-        Ny = 400;
+        Nx = 10;
+        Ny = 4;
         sigma = 20;
-        xlin = np.linspace(Nx, Nx) - Nx/2;
-        ylin = np.linspace(Nx, Ny) - Ny/2;
+        xlin = np.linspace(0,Nx, Nx) - Nx/2;
+        ylin = np.linspace(0,Ny, Ny) - Ny/2;
         [X, Y] = np.meshgrid(xlin,ylin);
-        z = np.exp(-(X**2 +Y**2)/sigma**2);
+        z = 255*np.exp(-(X**2 +Y**2)/sigma**2);
+
+        z_int = z.astype('uint8')
         index = np.random.randint(100);
         name = self.folder + '/test' + str(index) + '.BMP';
         print(name)
-        imageio.imwrite(name, z);
+        imageio.imwrite(name, z_int);
 
     def pull_data(self):
         '''
