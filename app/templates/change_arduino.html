@@ -10,6 +10,10 @@
     <th scope="col">Name</th>
     <th scope="col">Folder</th>
     <th scope="col">Status</th>
+    <th scope="col">xMin</th>
+    <th scope="col">xMax</th>
+    <th scope="col">yMin</th>
+    <th scope="col">yMax</th>
     <th scope="col">Other actions </th>
   </tr>
   </thead>
@@ -23,8 +27,12 @@
       {% else %}
       <td class="bg-warning">Closed</td>
       {% endif %}
+      <td>{{ props.xmin }}</td>
+      <td>{{ props.xmax }}</td>
+      <td>{{ props.ymin }}</td>
+      <td>{{ props.ymax }}</td>
       <td>
-        <a class='btn btn-default' href="{{url_for('details', ard_nr = props.id)}}">Log</a><td>
+        <a class='btn btn-default' href="{{url_for('index')}}">Log</a><td>
         <!-- <a class='btn btn-default' href="{{url_for('index')}}"><span class ="glyphicon glyphicon-remove"></span></a><td> -->
     </tr>
  </tbody>
@@ -36,6 +44,9 @@
 </div>
 
 <h2>Update control parameters </h2>
+<div class="row">
+  <div class="col"> {{ wtf.quick_form(roi_form, action="/roi") }}</div>
+</div>
 {% endblock %}
 
 

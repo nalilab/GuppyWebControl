@@ -10,6 +10,17 @@ class UpdateForm(FlaskForm):
     folder = StringField('Update to folder:', validators=[DataRequired()])
     submit = SubmitField('Update folder')
 
+class RoiForm(FlaskForm):
+    '''
+    The form for change the ROI
+    '''
+    id = HiddenField('A hidden field');
+    xMin = IntegerField('minimal X:', validators=[DataRequired()]);
+    yMin = IntegerField('minimal Y:', validators=[DataRequired()]);
+    xMax = IntegerField('maximal X:', validators=[DataRequired()]);
+    yMax = IntegerField('maximal Y:', validators=[DataRequired()]);
+    submit = SubmitField('Update ROI')
+
 class ConnectForm(FlaskForm):
     '''
     The form for connecting to the camera

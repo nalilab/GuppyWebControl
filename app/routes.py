@@ -1,5 +1,5 @@
 from app import app, socketio
-from app.forms import UpdateForm, ConnectForm
+from app.forms import UpdateForm, ConnectForm, RoiForm
 import h5py
 import git
 import os
@@ -32,6 +32,7 @@ class GuppySocketProtocol(object):
     id = 0;
     ard_str = '';
     folder = '.';
+    xMin = 207; xMax = 597;yMin = 200; yMax = 500;
 
     def __init__(self, socketio, folder):
         """
@@ -92,16 +93,20 @@ class GuppySocketProtocol(object):
             img_files = set(os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.BMP'))
             new_img_files = img_files.difference(previous_img_files)
             if new_img_files:
-                print('Found something.')
                 self.unit_of_work += 1
                 timestamp = datetime.now().replace(microsecond=0).isoformat();
                 for img_file in new_img_files:
                     n_img = imageio.imread(img_file);
-                previous_img_files = img_files;
 
+                    im_crop = n_img[self.yMin:self.yMax,self.xMin:self.xMax];
+                    Nat = int(im_crop.sum());
+                    print(Nat)
                 self.socketio.emit('log_response',
                     {'time':timestamp, 'data': n_img.tolist(), 'count': self.unit_of_work,
-                    'id': self.id})
+                    'id': self.id, 'Nat': Nat})
+
+                previous_img_files = img_files;
+
 
             eventlet.sleep(0.1)
 
@@ -110,8 +115,8 @@ class GuppySocketProtocol(object):
         Creating a test pattern in the save_folder.
         '''
         # only read out on ask
-        Nx = 10;
-        Ny = 4;
+        Nx = 752;
+        Ny = 578;
         sigma = 20;
         xlin = np.linspace(0,Nx, Nx) - Nx/2;
         ylin = np.linspace(0,Ny, Ny) - Ny/2;
@@ -155,7 +160,8 @@ def index():
         # create also the name for the readout field of the temperature
         temp_field_str = 'read' + str(arduino.id);
         dict = {'name': arduino.name, 'id': arduino.id, 'folder': arduino.folder,
-        'active': arduino.is_open(), 'label': temp_field_str};
+            'active': arduino.is_open(), 'label': temp_field_str, 'xmin':arduino.xMin,
+            'xmax':arduino.xMax, 'ymin':arduino.yMin, 'ymax':arduino.yMax};
         props.append(dict)
 
     return render_template('index.html',n_ards = n_ards, props = props);
@@ -227,12 +233,13 @@ def change_arduino(ard_nr):
     n_ards = len(arduinos);
     arduino = arduinos[int(ard_nr)];
     props = {'name': arduino.name, 'id': int(ard_nr), 'folder': arduino.folder,
-            'active': arduino.is_open()};
+            'active': arduino.is_open(), 'xmin':arduino.xMin,
+            'xmax':arduino.xMax, 'ymin':arduino.yMin, 'ymax':arduino.yMax};
 
     uform = UpdateForm(id=ard_nr)
-
+    roi_form = RoiForm(id=ard_nr)
     return render_template('change_arduino.html',
-        form=uform, props=props);
+        form=uform, roi_form = roi_form, props=props);
 
 @app.route('/update', methods=['POST'])
 def update():
@@ -245,6 +252,7 @@ def update():
         return redirect(url_for('add_camera'))
 
     uform = UpdateForm();
+    roi_form = RoiForm();
 
     id = int(uform.id.data);
     camera = arduinos[id];
@@ -261,9 +269,42 @@ def update():
         return redirect(url_for('change_arduino', ard_nr = id))
     else:
         props = {'name': camera.name, 'id': int(ard_nr), 'folder': camera.folder,
-            'active': camera.is_open()};
+            'active': camera.is_open(), 'xmin':arduino.xMin,
+            'xmax':arduino.xMax, 'ymin':arduino.yMin, 'ymax':arduino.yMax};
 
-        return render_template('change_arduino.html', form=uform, props=props);
+        return render_template('change_arduino.html', form=uform, roi_form= roi_form, props=props);
+
+@app.route('/roi', methods=['POST'])
+def roi():
+    '''
+    Update the roi.
+    '''
+    global arduinos
+    if not arduinos:
+        flash('No camera yet.', 'error')
+        return redirect(url_for('add_camera'))
+
+    uform = UpdateForm();
+    roi_form = RoiForm();
+
+    id = int(roi_form.id.data);
+    camera = arduinos[id];
+
+    if roi_form.validate_on_submit():
+
+        camera = arduinos[int(id)];
+        camera.xMin = roi_form.xMin.data;
+        camera.xMax = roi_form.xMax.data;
+        camera.yMin = roi_form.yMin.data;
+        camera.yMax = roi_form.yMax.data;
+        flash('Updated the camera ROI');
+        return redirect(url_for('change_arduino', ard_nr = id))
+    else:
+        props = {'name': camera.name, 'id': int(ard_nr), 'folder': camera.folder,
+            'active': camera.is_open(), 'xmin':arduino.xMin,
+            'xmax':arduino.xMax, 'ymin':arduino.yMin, 'ymax':arduino.yMax};
+
+        return render_template('change_arduino.html', form=uform, roi_form= roi_form, props=props);
 
 @app.route('/file/<filestring>')
 def file(filestring):

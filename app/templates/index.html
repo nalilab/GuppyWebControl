@@ -8,6 +8,10 @@
     <th scope="col">Name</th>
     <th scope="col">Folder</th>
     <th scope="col">Status</th>
+    <th scope="col">xMin</th>
+    <th scope="col">xMax</th>
+    <th scope="col">yMin</th>
+    <th scope="col">yMax</th>
     <th scope="col">Other actions </th>
   </tr>
   </thead>
@@ -22,6 +26,11 @@
       {% else %}
       <td class="bg-warning">Closed</td>
       {% endif %}
+
+      <td>{{ ard.xmin }}</td>
+      <td>{{ ard.xmax }}</td>
+      <td>{{ ard.ymin }}</td>
+      <td>{{ ard.ymax }}</td>
       <td>
         <a class='btn btn-default' href="{{url_for('change_arduino', ard_nr = ard.id)}}">Settings</a>
     </tr>
@@ -69,21 +78,19 @@ $(document).ready(function() {
   socket.on('log_response', function(msg) {
     var count = msg.count;
     var data = msg.data;
-    $('#log').prepend('<br>' + $('<div/>').text('Received #' + msg.count + ': ' + msg.data).html());
+    var Natoms = msg.Nat;
+    $('#log').prepend('<br>' + $('<div/>').text('Received #' + msg.count + ': Natoms =' + Natoms).html());
 
     data_arr = [];
     for (var i=0; i<data.length; i++){
       data_arr.push(data[i]);
     }
 
-    console.log(data_arr);
-
     var updated_plot = {
       z: data_arr,
       type: 'heatmap'
     };
 
-    var layout = {};
     Plotly.newPlot('plot', [updated_plot], layout);
 
     var time = msg.time;
@@ -119,9 +126,22 @@ var setpoint_trace = {
   type: 'heatmap'
 };
 
-
 var data = [ setpoint_trace];
-var layout = {};
+var xMin = 207; var xMax = 597;var yMin = 200; var yMax = 500;
+var layout = {
+  shapes: [{
+      type: 'rect',
+      x0: xMin,
+      y0: yMin,
+      x1: xMax,
+      y1: yMax,
+      opacity: 1,
+      line: {
+        color: 'rgb(55, 128, 191)',
+        width: 3
+      }
+    }]
+  };
 
   Plotly.newPlot('plot', data, layout);
 });
