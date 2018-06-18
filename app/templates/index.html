@@ -63,6 +63,19 @@ $(document).ready(function() {
     socket.emit('trig_img');
   });
 
+  socket.on('log_response', function(msg) {
+    var count = msg.count;
+    var data = msg.data;
+    $('#log').prepend('<br>' + $('<div/>').text('Received #' + msg.count + ': ' + msg.data).html());
+
+    console.log(data)
+    var time = msg.time;
+    var id = msg.id;
+    var this_id =  '{{ ard_nr}}';
+    console.log(id);
+    console.log(this_id);
+  });
+
   // Interval function that tests message latency by sending a "ping"
   var ping_pong_times = [];
   var start_time;

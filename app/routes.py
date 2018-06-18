@@ -91,11 +91,17 @@ class GuppySocketProtocol(object):
         while self.switch:
             img_files = set(os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.BMP'))
             new_img_files = img_files.difference(previous_img_files)
-            for img_file in new_img_files:
-                print('Obtained a new file')
-                previous_img_files = img_files
-                self.socketio.emit('my_response',
-                    {'data': 'We have a new img', 'count': self.unit_of_work})
+            if new_img_files:
+                print('Found something.')
+                self.unit_of_work += 1
+                timestamp = datetime.now().replace(microsecond=0).isoformat();
+                for img_file in new_img_files:
+                    n_img = imageio.imread(img_file);
+                previous_img_files = img_files;
+
+                self.socketio.emit('log_response',
+                    {'time':timestamp, 'data': n_img.tolist(), 'count': self.unit_of_work,
+                    'id': self.id})
 
             eventlet.sleep(0.1)
 
@@ -111,7 +117,8 @@ class GuppySocketProtocol(object):
         ylin = np.linspace(Nx, Ny) - Ny/2;
         [X, Y] = np.meshgrid(xlin,ylin);
         z = np.exp(-(X**2 +Y**2)/sigma**2);
-        name = self.folder + '/test17.BMP';
+        index = np.random.randint(100);
+        name = self.folder + '/test' + str(index) + '.BMP';
         print(name)
         imageio.imwrite(name, z);
 
